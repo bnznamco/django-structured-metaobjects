@@ -1,0 +1,69 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.2"]
+
+[project]
+authors = [{name = "Lotrèk", email = "gabriele.baldi.01@gmail.com"}]
+classifiers = [
+  "Environment :: Web Environment",
+  "Framework :: Django",
+  "Framework :: Django :: 4.2",
+  "Framework :: Django :: 5.0",
+  "Framework :: Django :: 5.1",
+  "Framework :: Django :: 5.2",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "Django>=4.2",
+  "django-structured-json-field>=1.5.1",
+  "djangorestframework>=3.14.0,<4.0.0",
+  "pydantic>=2.12",
+]
+description = "User-defined typed JSON objects for Django, powered by django-structured-json-field"
+dynamic = ["version"]
+keywords = ["django", "pydantic", "django pydantic", "json schema", "meta models", "dynamic models"]
+license = {text = "MIT"}
+name = "django-structured-metaobjects"
+requires-python = ">= 3.10"
+
+[project.readme]
+content-type = "text/markdown"
+file = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/bnznamco/django-structured-metaobjects"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.semantic_release]
+version_variables = ["setup.py:__version__", "structured_metaobjects/__init__.py:__version__"]
+
+[tool.semantic_release.branches.master]
+match = "master"
+prerelease = false
+
+[tool.semantic_release.branches."next"]
+match = "next"
+prerelease = true
+prerelease_token = "beta"
+
+[tool.semantic_release.changelog]
+mode = "update"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+output_format = "md"

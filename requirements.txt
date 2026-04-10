@@ -1,0 +1,4 @@
+Django>=4.2
+djangorestframework>=3.14.0,<4.0.0
+pydantic>=2.12
+django-structured-json-field>=1.5.1
