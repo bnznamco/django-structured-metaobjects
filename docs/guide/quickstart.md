@@ -39,7 +39,6 @@ router.register(r"meta-instances", MetaInstanceViewSet, "meta-instances")
 
 In the Django admin (or via the API), create a new **MetaType**:
 
-- **key**: `article`
 - **name**: `Article`
 - **schema**: define fields like `title` (string, required), `body` (text), `published` (boolean)
 
@@ -50,10 +49,9 @@ Create a **MetaInstance** linked to the Article type:
 ```python
 from structured_metaobjects.models import MetaType, MetaInstance
 
-mt = MetaType.objects.get(key="article")
+mt = MetaType.objects.get(name="Article")
 mi = MetaInstance.objects.create(
     meta_type=mt,
-    identifier="hello-world",
     data={"title": "Hello World", "body": "Content here", "published": True},
 )
 ```
