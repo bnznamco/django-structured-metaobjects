@@ -14,9 +14,9 @@ chosen type.
 
 ## Features
 
-- Field kinds: primitives, `ref` (single FK), `queryset` (list of FKs),
-  `group` (nested object), `list` (repeating group), with optional
-  `translated=True` per-field.
+- Field kinds: `string`, `html`, `number`, `boolean`, `date`, `datetime`,
+  `select`, `ref` (single FK), `queryset` (list of FKs), `group` (nested
+  object), `list` (repeating group), with optional `translated=True` per-field.
 - Runtime Pydantic compiler with per-MetaType caching, invalidated on save.
 - Admin form rebuilds the `data` widget for the selected meta type.
 - DRF `MetaTypeViewSet` / `MetaInstanceViewSet` with `schema/` action.
@@ -53,19 +53,19 @@ router.register(r"meta-instances", MetaInstanceViewSet, "meta-instances")
 
 ## Field kinds
 
-| kind       | Python type built by the compiler          | Notes                                  |
-|------------|--------------------------------------------|----------------------------------------|
-| `string`   | `str`                                      |                                        |
-| `text`     | `str`                                      | Multi-line.                            |
-| `integer`  | `int`                                      |                                        |
-| `number`   | `float`                                    |                                        |
-| `boolean`  | `bool`                                     |                                        |
-| `date`     | `datetime.date`                            |                                        |
-| `datetime` | `datetime.datetime`                        |                                        |
-| `ref`      | `<TargetModel>`                            | Requires `target_model="app.Model"`.   |
-| `queryset` | `List[<TargetModel>]`                      | Requires `target_model="app.Model"`.   |
-| `group`    | nested Pydantic model from `children`      |                                        |
-| `list`     | `List[<group model>]` from `children`      |                                        |
+| kind       | Python type built by the compiler          | Notes                                                        |
+|------------|--------------------------------------------|--------------------------------------------------------------|
+| `string`   | `str`                                      | Supports `multiline`, `min_length`, `max_length`, `placeholder`. |
+| `html`     | `str`                                      | Rich-text. Supports `placeholder`.                           |
+| `number`   | `float` / `int`                            | Set `integer=True` for `int`. Supports `minimum`, `maximum`. |
+| `boolean`  | `bool`                                     |                                                              |
+| `date`     | `datetime.date`                            |                                                              |
+| `datetime` | `datetime.datetime`                        |                                                              |
+| `select`   | `str`                                      | Requires `choices` (list of `{value, label}`).               |
+| `ref`      | `<TargetModel>`                            | Requires `target_model="app.Model"`.                         |
+| `queryset` | `List[<TargetModel>]`                      | Requires `target_model="app.Model"`.                         |
+| `group`    | nested Pydantic model from `children`      | Requires `children`.                                         |
+| `list`     | `List[<group model>]` from `children`      | Requires `children`.                                         |
 
 Setting `translated=True` wraps the field in `Dict[str, T]` so the value
 is a per-language map.

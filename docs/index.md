@@ -19,7 +19,7 @@ features:
   - title: Pydantic Runtime Compiler
     details: Schemas are compiled to Pydantic models at runtime with per-MetaType caching, invalidated on save.
   - title: Rich Field Kinds
-    details: Primitives, refs (FK), querysets, groups (nested objects), lists, with optional per-field translation.
+    details: string, html, number, boolean, date, datetime, select, ref (FK), queryset, group, list — with optional per-field translation.
   - title: Admin Integration
     details: The admin form dynamically rebuilds the data widget based on the selected meta type.
   - title: REST API
