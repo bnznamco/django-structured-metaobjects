@@ -15,10 +15,10 @@ on the MetaType invalidate the cache automatically.
 """
 
 from datetime import date, datetime
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Annotated, Dict, List, Literal, Optional, Tuple, Type
 
 from django.apps import apps
-from pydantic import Field, create_model
+from pydantic import Field, StringConstraints, create_model
 from structured.pydantic.fields import ForeignKey, QuerySet
 from structured.pydantic.models import BaseModel
 
@@ -79,6 +79,31 @@ def _field_type(field_def: MetaTypeFieldDef, model_name_hint: str):
     raise ValueError(f"Unknown MetaType field kind: {kind!r}")
 
 
+def _constrained_type(fdef: MetaTypeFieldDef, py_type):
+    """
+    Apply server-side validation matching the declared constraints, on the
+    INNER type (so ``translated`` fields constrain each value, not the dict):
+    select choices -> Literal, string lengths -> StringConstraints,
+    number bounds -> Field(ge=/le=). The JSON-schema hints emitted by
+    ``_json_schema_extra`` advertise the same constraints to the widget.
+    """
+    kind = fdef.kind
+    if kind == MetaFieldKind.select and fdef.choices:
+        return Literal[tuple(c.value for c in fdef.choices)]
+    if kind == MetaFieldKind.string and (
+        fdef.min_length is not None or fdef.max_length is not None
+    ):
+        return Annotated[
+            py_type,
+            StringConstraints(min_length=fdef.min_length, max_length=fdef.max_length),
+        ]
+    if kind == MetaFieldKind.number and (
+        fdef.minimum is not None or fdef.maximum is not None
+    ):
+        return Annotated[py_type, Field(ge=fdef.minimum, le=fdef.maximum)]
+    return py_type
+
+
 def _json_schema_extra(fdef: MetaTypeFieldDef) -> dict:
     """Build JSON Schema extra properties from the field definition."""
     extra = {}
@@ -124,7 +149,7 @@ def _build_group_model(
     for fdef in fields:
         if isinstance(fdef, dict):
             fdef = MetaTypeFieldDef.model_validate(fdef)
-        py_type = _field_type(fdef, model_name)
+        py_type = _constrained_type(fdef, _field_type(fdef, model_name))
         if fdef.translated:
             py_type = Dict[str, py_type]
         json_extra = _json_schema_extra(fdef)

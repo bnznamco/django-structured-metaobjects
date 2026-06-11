@@ -460,3 +460,73 @@ class TestGetJsonSchema:
             assert "items" in array_branch
         else:
             assert "items" in tags_prop or "$ref" in tags_prop
+
+
+@pytest.mark.django_db
+class TestConstraintEnforcement:
+    """Declared constraints must be enforced server-side, not only
+    advertised in the JSON schema (regression for UI-only constraints)."""
+
+    def _model(self, **fdef):
+        mt = MetaType.objects.create(name="Constr", schema=[{"name": "f", **fdef}])
+        return mt.get_pydantic_model()
+
+    def test_select_choices_enforced(self):
+        model = self._model(
+            kind="select",
+            choices=[{"value": "red"}, {"value": "blue", "label": "Blue"}],
+        )
+        assert model.model_validate({"f": "red"}).f == "red"
+        with pytest.raises(Exception):
+            model.model_validate({"f": "PURPLE"})
+
+    def test_string_length_enforced(self):
+        model = self._model(kind="string", min_length=3, max_length=5)
+        assert model.model_validate({"f": "abcd"}).f == "abcd"
+        with pytest.raises(Exception):
+            model.model_validate({"f": "ab"})
+        with pytest.raises(Exception):
+            model.model_validate({"f": "abcdef"})
+
+    def test_number_bounds_enforced(self):
+        model = self._model(kind="number", minimum=0, maximum=10)
+        assert model.model_validate({"f": 5}).f == 5
+        with pytest.raises(Exception):
+            model.model_validate({"f": -1})
+        with pytest.raises(Exception):
+            model.model_validate({"f": 999})
+
+    def test_integer_bounds_enforced(self):
+        model = self._model(kind="number", integer=True, minimum=1, maximum=3)
+        assert model.model_validate({"f": 2}).f == 2
+        with pytest.raises(Exception):
+            model.model_validate({"f": 4})
+
+    def test_translated_constraints_apply_per_value(self):
+        model = self._model(kind="string", translated=True, max_length=3)
+        ok = model.model_validate({"f": {"en": "abc", "it": "ab"}})
+        assert ok.f["en"] == "abc"
+        with pytest.raises(Exception):
+            model.model_validate({"f": {"en": "too-long"}})
+
+    def test_schema_output_unchanged(self):
+        """Constraints still appear in the JSON schema for the widget,
+        including the oneOf choice titles."""
+        mt = MetaType.objects.create(
+            name="SchemaOut",
+            schema=[
+                {
+                    "name": "color",
+                    "kind": "select",
+                    "required": True,
+                    "choices": [{"value": "red", "label": "Red"}],
+                },
+                {"name": "title", "kind": "string", "min_length": 2, "max_length": 8, "required": True},
+            ],
+        )
+        schema = mt.get_json_schema()
+        color = schema["properties"]["color"]
+        assert {"const": "red", "title": "Red"} in color["oneOf"]
+        title = schema["properties"]["title"]
+        assert title["minLength"] == 2
+        assert title["maxLength"] == 8
