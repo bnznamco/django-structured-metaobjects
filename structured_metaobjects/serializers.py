@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError as DRFValidationError
+from structured.contrib.restframework import FieldsOverrideMixin
 
 from .models import MetaInstance, MetaType
 
 
-class MetaTypeSerializer(serializers.ModelSerializer):
+class MetaTypeSerializer(FieldsOverrideMixin, serializers.ModelSerializer):
     class Meta:
         model = MetaType
         fields = "__all__"

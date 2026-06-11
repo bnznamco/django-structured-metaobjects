@@ -17,6 +17,25 @@ class TestMetaTypeSerializer:
         data = MetaTypeSerializer(mt).data
         assert data["name"] == "Ser"
         assert isinstance(data["schema"], list)
+        # Regression: field defs must serialize as dicts, not [key, value]
+        # pair arrays (DRF's encoder iterating pydantic objects).
+        field_def = data["schema"][0]
+        assert isinstance(field_def, dict)
+        assert field_def["name"] == "title"
+        assert field_def["kind"] == "string"
+
+    def test_serialize_round_trips_through_json(self):
+        import json
+        from rest_framework.renderers import JSONRenderer
+
+        mt = MetaType.objects.create(
+            name="RT",
+            schema=[{"name": "n", "kind": "number", "integer": True}],
+        )
+        rendered = JSONRenderer().render(MetaTypeSerializer(mt).data)
+        parsed = json.loads(rendered)
+        assert isinstance(parsed["schema"][0], dict)
+        assert parsed["schema"][0]["name"] == "n"
 
     def test_deserialize(self):
         payload = {
