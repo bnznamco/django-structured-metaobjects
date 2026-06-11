@@ -194,6 +194,28 @@ class TestMetaInstanceCacheEngine:
             qs_pks = [p.pk for p in obj.related_pages]
             assert set(qs_pks) == {pages[1].pk, pages[2].pk}
 
+    def test_obj_does_not_mutate_stored_data(self, pages):
+        """Regression: accessing .obj must not splice ValueWithCache objects
+        into the persisted data dict — save() after .obj must keep working."""
+        from structured.cache.cache import ValueWithCache
+
+        mt = MetaType.objects.create(
+            name="No Mutation",
+            schema=[
+                {"name": "page", "kind": "ref", "target_model": "test_module.Page"},
+                {"name": "pages", "kind": "queryset", "target_model": "test_module.Page"},
+            ],
+        )
+        mi = MetaInstance.objects.create(
+            meta_type=mt,
+            data={"page": pages[0].pk, "pages": [p.pk for p in pages]},
+        )
+        _ = mi.obj
+        assert not isinstance(mi.data["page"], ValueWithCache)
+        assert not any(isinstance(v, ValueWithCache) for v in mi.data["pages"])
+        # save() without an intervening clean() must not raise
+        mi.save()
+
     def test_obj_cache_no_extra_queries(self, django_assert_num_queries, pages):
         mt = MetaType.objects.create(
             name="Cache Hit",

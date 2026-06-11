@@ -1,3 +1,5 @@
+import copy
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -85,8 +87,12 @@ class MetaInstance(models.Model):
         if cached is not None and cached[0] is self.data:
             return cached[1]
         model_cls = self.meta_type.get_pydantic_model()
-        raw = self.data or {}
-        model_cls._cache_engine.build_cache(raw)
+        # Validate a deep copy: the structured cache engine mutates its input
+        # in place (splicing non-JSON-serializable ValueWithCache placeholders
+        # into ref/queryset fields), which would corrupt the persisted ``data``
+        # dict and make a later save() fail. The inherited build_cache
+        # wrap-validator inside model_validate still batch-fetches relations.
+        raw = copy.deepcopy(self.data) if self.data else {}
         parsed = model_cls.model_validate(raw)
         self._obj_cache = (self.data, parsed)
         return parsed
